@@ -12,9 +12,5 @@
             "description": "A hero banner with heading, text, and background image",
             "template": "/blocks/hero/hero.html"
         }
-    ],
-    "templates": [],
-    "icons": [],
-    "placeholders": [],
-    "media": []
+    ]
 }
