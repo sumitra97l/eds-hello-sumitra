@@ -1,0 +1,17 @@
+{
+    "blocks": [
+        {
+            "name": "promo-card",
+            "title": "Promo Card",
+            "description": "Image + title + text + button card.",
+            "category": "Cards",
+            "tags": [ "card", "promo", "cta" ],
+            "templates": [
+                {
+                    "label": "Basic",
+                    "path": "/blocks/promo-card/promo-card.plain.html"
+                }
+            ]
+        }
+    ]
+}
