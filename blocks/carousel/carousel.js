@@ -1,85 +1,99 @@
-import { fetchPlaceholders, getMetadata } from '../../scripts/aem.js';
-const placeholders = await fetchPlaceholders(getMetadata("locale"));
+import { getMetadata } from '../../scripts/aem.js';
 
-const { btnNxt, btnPre } = placeholders;
+async function fetchPlaceholders(locale) {
+  // keep your existing fetch, but be defensive in case of network issues
+  try { 
+    const url = locale ? `/${locale}/placeholders.json` : '/placeholders.json';
+    const res = await fetch(url, { cache: 'no-store' });
+    if (!res.ok) return {};
+    return res.json();
+  } catch (e) {
+    // If fetching placeholders fails we’ll fall back to defaults below
+    return {}; 
+  }
+}
+
+const placeholders = await fetchPlaceholders(getMetadata('locale'));
+
+const { btnNxt, btnPre } = placeholders || {}; 
+const NEXT_LABEL = btnNxt || '›';               
+const PREV_LABEL = btnPre || '‹';               
+
 export default function decorate(block) {
+  console.log('placeholders ---> ', placeholders, btnNxt, btnPre);
 
-  console.log("placeholders ---> ", placeholders, btnNxt, btnPre);
-  const rows = [...block.children];
-  [...block.children].forEach((row, r) => {
-    if (r == 0) {
+  // IMPORTANT: snapshot the rows BEFORE we start replacing nodes,
+  // so we don't iterate a live NodeList while mutating it.
+  const rows = [...block.children]; 
+
+  rows.forEach((row, r) => { 
+    if (r === 0) {
       const nextbtn = document.createElement('button');
-      nextbtn.classList.add('btn');
-      nextbtn.classList.add('btn-next');
-      const node = document.createTextNode(btnNxt);
+      nextbtn.classList.add('btn', 'btn-next');
+      nextbtn.setAttribute('type', 'button');          
+      nextbtn.setAttribute('aria-label', 'Next slide'); 
+
+      // Use placeholder label if available; otherwise fall back to arrow
+      const node = document.createTextNode(NEXT_LABEL); 
       nextbtn.append(node);
       row.replaceWith(nextbtn);
-    } else if (r == rows.length - 1) {
+    } else if (r === rows.length - 1) {
       const prebtn = document.createElement('button');
-      prebtn.classList.add('btn');
-      prebtn.classList.add('btn-prev');
-      const node = document.createTextNode(btnPre);
+      prebtn.classList.add('btn', 'btn-prev');
+      prebtn.setAttribute('type', 'button');            
+      prebtn.setAttribute('aria-label', 'Previous slide'); 
+
+      const node = document.createTextNode(PREV_LABEL); 
       prebtn.append(node);
       row.replaceWith(prebtn);
     } else {
       row.classList.add('slide');
       [...row.children].forEach((col, c) => {
-        if (c == 1) {
+        if (c === 1) {
           col.classList.add('slide-text');
         }
-
       });
     }
   });
 
+  // Scope queries to THIS block so multiple carousels won’t conflict
+  const slides = block.querySelectorAll('.slide'); 
 
-  const slides = document.querySelectorAll(".slide");
-
-  // loop through slides and set each slides translateX
+  // Position slides horizontally
   slides.forEach((slide, indx) => {
     slide.style.transform = `translateX(${indx * 100}%)`;
   });
 
-  // select next slide button
-  const nextSlide = document.querySelector(".btn-next");
+  const nextSlideBtn = block.querySelector('.btn-next'); 
+  const prevSlideBtn = block.querySelector('.btn-prev'); 
 
-  // current slide counter
+  // Early exit (or hide controls) if there are < 2 slides
+  if (slides.length <= 1) { 
+    if (nextSlideBtn) nextSlideBtn.style.display = 'none';
+    if (prevSlideBtn) prevSlideBtn.style.display = 'none';
+    return; // nothing to slide
+  }
+
   let curSlide = 0;
-  // maximum number of slides
-  let maxSlide = slides.length - 1;
+  const maxSlide = slides.length - 1;
 
-  // add event listener and navigation functionality
-  nextSlide.addEventListener("click", function () {
-    // check if current slide is the last and reset current slide
-    if (curSlide === maxSlide) {
-      curSlide = 0;
-    } else {
-      curSlide++;
-    }
-
-    //   move slide by -100%
-    slides.forEach((slide, indx) => {
-      slide.style.transform = `translateX(${100 * (indx - curSlide)}%)`;
+  // Navigation: Next
+  if (nextSlideBtn) { 
+    nextSlideBtn.addEventListener('click', () => {
+      curSlide = (curSlide === maxSlide) ? 0 : curSlide + 1; // same behavior
+      slides.forEach((slide, indx) => {
+        slide.style.transform = `translateX(${100 * (indx - curSlide)}%)`;
+      });
     });
-  });
+  }
 
-  // select next slide button
-  const prevSlide = document.querySelector(".btn-prev");
-
-  // add event listener and navigation functionality
-  prevSlide.addEventListener("click", function () {
-    // check if current slide is the first and reset current slide to last
-    if (curSlide === 0) {
-      curSlide = maxSlide;
-    } else {
-      curSlide--;
-    }
-
-    //   move slide by 100%
-    slides.forEach((slide, indx) => {
-      slide.style.transform = `translateX(${100 * (indx - curSlide)}%)`;
+  // Navigation: Prev
+  if (prevSlideBtn) { 
+    prevSlideBtn.addEventListener('click', () => {
+      curSlide = (curSlide === 0) ? maxSlide : curSlide - 1; // same behavior
+      slides.forEach((slide, indx) => {
+        slide.style.transform = `translateX(${100 * (indx - curSlide)}%)`;
+      });
     });
-  });
-
-
+  }
 }
