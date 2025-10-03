@@ -19,6 +19,15 @@ body {
     overflow: hidden;
     border-radius: 15px;
     margin: auto;
+    img {
+            width:100%;
+        }
+}
+.slide picture,
+.slide img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* no stretching */
 }
 
 .slide {
@@ -29,12 +38,15 @@ body {
     transition: all 0.5s;
 }
 
-div.slide-text {
+.slide-text {
     position: absolute;
     width: 100%;
     top: 60%;
     color: #fff;
     text-align: center;
+    h1,h2,h3,h4,h5,h6 {
+           margin-top: 0px;
+       }
 }
 
 .btn {
